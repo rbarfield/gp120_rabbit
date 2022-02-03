@@ -38,7 +38,7 @@ knitr::opts_chunk$set(warning = FALSE)
 ```{r libs,message=FALSE, warning=FALSE, include=F, results='asis'}
 
 
-library(coin)
+
 library(nparLD)
 
 library(geepack)
@@ -48,14 +48,7 @@ library(nlme)
 library(lme4)
 library(lmerTest)
 
-library(table1)
-library(ComplexHeatmap)
-library(RColorBrewer)
 
-library(lubridate)
-library(DescTools)
-library(readxl)
-library(tidyxl)
 library(knitr)
 library(kableExtra)
 library(tidyverse)
@@ -80,33 +73,11 @@ pathtofile<-file.path(getwd(),"../",pathtofile)
 Fig2.data<-readRDS(file.path(pathtofile,
                              "0_data_processed_fig2.RDS"))
 
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# Adding information on what "vaccine group" in
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-OurVaccine.info<-read.delim(text = "Rabbit	Vaccine
-N32330	gp120+STR8S-C (-Q11)
-N32331	gp120+STR8S-C (-Q11)
-N32332	gp120+STR8S-C (-Q11)
-N32333	gp120+STR8S-C (-Q11)
-N32334	gp120+STR8S-C (-Q11)
-N32335	gp120+STR8S-C (-Q11)
-N32336	gp120+STR8S-C (-Q11)
-N32337	gp120+STR8S-C (-Q11)
-N32338	gp120-Q11+STR8S-C (+Q11)
-N32339	gp120-Q11+STR8S-C (+Q11)
-N32340	gp120-Q11+STR8S-C (+Q11)
-N32341	gp120-Q11+STR8S-C (+Q11)
-N32342	gp120-Q11+STR8S-C (+Q11)
-N32343	gp120-Q11+STR8S-C (+Q11)
-N32344	gp120-Q11+STR8S-C (+Q11)
-N32345	gp120-Q11+STR8S-C (+Q11)",sep="\t")
 
 
 ```
 
 # ELISA (Figure 2B)
-
-
 
 
 ```{r aim11, }
@@ -247,9 +218,7 @@ source("1_general_code_for_calc_BC_variance.R")
 
 
 ForAnalysis<-Fig2.data$Figure2_BAMA %>% select(-Description,-What) %>% 
-  pivot_longer(cols=c(-Week,-RabbitID)) %>% 
-  rename(Rabbit=RabbitID) %>% 
-  left_join(OurVaccine.info) %>% 
+  pivot_longer(cols=c(-Week,-Rabbit,-Vaccine)) %>% 
   mutate(Vaccine=ifelse(str_detect(Vaccine,"gp120-Q11"),1,0)) %>% 
   filter(!is.na(value)) %>% 
   mutate(Week=factor(Week,levels=c("2","8","14"))) %>% 
@@ -267,8 +236,10 @@ my.formula<-BB~-1+name+Week*Vaccine
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 # Get Data in proper form
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-NewGEE<-ForAnalysis %>% mutate(Rabbit=str_sub(Rabbit,2,-1)) %>% 
+NewGEE<-ForAnalysis %>% 
+  mutate(Rabbit=str_sub(Rabbit,2,-1)) %>% 
   mutate(BB=log10(value))
+
 NewGEE$subject<-NewGEE$Rabbit
 NewGEE$id<-NewGEE$Rabbit
 NewGEE<-NewGEE[order(NewGEE$subject),]
@@ -340,7 +311,9 @@ NewGEE %>% select(-Vaccine) %>%
   mutate(Rabbit=paste0("N",Rabbit)) %>% 
   mutate(Week=paste("Week",Week)) %>% 
   mutate(Week=factor(Week,levels=c("Week 2","Week 8","Week 14"))) %>% 
-  left_join(OurVaccine.info) %>% 
+  left_join(Fig2.data$Figure2_BAMA %>% 
+              select(Rabbit,Vaccine) %>%
+              distinct()) %>% 
   ggplot(aes(x=name,y=value,col=Vaccine))+
   geom_boxplot(outlier.shape = NA)+
   geom_point(position=position_jitterdodge(0.1,seed=4154))+
@@ -400,6 +373,7 @@ ForAnalysis %>%
 ## Analysis
 
 ```{r nparldthisone, options}
+
 NewAnalysis<-ForAnalysis%>% 
   filter(week_challenge!="Week 0") %>% 
   right_join(ForAnalysis %>% filter(week_challenge=="Week 0") %>% 
@@ -438,6 +412,8 @@ data.frame(Pvalues=c(signif(Resu.MFI$ANOVA.test.mod.Box[4],3),
 ```
 
 After multiple testing correction, there appears to be statistical evidence at the 0.05 level of differences between the vaccine groups over time after subtracting off the week 0 value.
+
+
 
 # Session Info
 
