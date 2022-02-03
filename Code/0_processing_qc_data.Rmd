@@ -28,6 +28,9 @@ knitr::opts_chunk$set(echo = TRUE)
 # 
 # Description: Reading in and processing the data
 # 
+# 
+# Modified 2022-02-03: Updating to output corresponding items as originally the planned figures 
+#                      were in a slightly different order. 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- 
 ```
@@ -64,97 +67,6 @@ pathtosave<-file.path(getwd(),"../",pathtosave)
 
 
 # Figure 2
-
-## Figure 2 Bama
-
-```{r bamadata, echo=T}
-
-
-Val1<-list.files(file.path(pathtofile,"Figure2"))
-NewFiles<-str_subset(Val1,
-                     "breadth")
-
-
-
-File1<-read_excel(file.path(pathtofile,"Figure2/",
-                            NewFiles[1]),"FI - Bkgd")
-File2<-read_excel(file.path(pathtofile,"Figure2/",
-                            NewFiles[2]),"FI - Bkgd")  
-
-
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# Subset to the necssary info and derive proper names
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- 
-      # First File 1
-      # Grabbing the second set of data and calculating the CV
-      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-      
-      NewFile<-File1 %>%
-        slice((str_which(.[[1]],"Type")[2]-1):n())
-
-      colnames(NewFile)<-c(NewFile[2,1:3] %>% unlist(),
-                     NewFile[1,] %>% c() %>% unlist() %>%
-                       na.omit())
-      
-      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-      # This drops the first two rows (which are empty) 
-      # and then drops the bottom rows which have excess stuff 
-      # 
-      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-      
-      Fin.File.1<-NewFile %>% slice(-(1:2)) %>% 
-        filter(rowSums(!is.na(.))>1) %>% 
-        mutate_at(4:ncol(.),as.numeric)
-      
-      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-      # File 2 
-      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-      
-      NewFile<-File2 %>% slice((str_which(.[[1]],"Type")[2]-1):n())
-
-      colnames(NewFile)<-c(NewFile[2,1:3] %>% unlist(),
-                     NewFile[1,] %>% c() %>% unlist() %>% na.omit())
-      
-      Fin.File.2<-NewFile %>% slice(-(1:2)) %>% 
-        filter(rowSums(!is.na(.))>1) %>% 
-        mutate_at(4:ncol(.),as.numeric)
-      
-      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-      # Put together
-      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-      
-      Fig2.Bama<-Fin.File.1 %>% mutate(What=NewFiles[1]) %>% 
-        bind_rows(Fin.File.2 %>% mutate(What=NewFiles[2]))
-      
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# Next QC and finding the CV and dropping samples 
-# that do not have a CV greater than 0.2 
-# dropping the blank column 
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---      
-      
-      
-      Fig2.save.Bama<-Fig2.Bama %>% 
-        filter(str_detect(Description,"wk")) %>% 
-        select(-starts_with("Blank")) %>% 
-        pivot_longer(cols = c(-Type,-Well,
-                              -Description,-What)) %>% 
-        group_by(Description,What,name) %>% 
-        summarize(MeanVal=mean(value),
-                  CV=abs(diff(value))/sum(value),
-                  .groups = "drop") %>% 
-        filter(CV<0.2) %>% 
-        select(-CV) %>% 
-        pivot_wider(values_from=MeanVal,names_from=name) %>% 
-        mutate(Week=parse_number(str_remove_all(str_split_fixed(Description,"N",2)[,1],
-                                                "wk")),
-               RabbitID=str_split_fixed(Description,
-                                        "[[:blank:]]",2)[,2]) %>% 
-        select(Description,RabbitID,Week,everything()) %>% 
-        arrange(Week)
-
-```
 
 
 
@@ -234,13 +146,119 @@ Fig2.Save.Elisa<-Elisa.2 %>%
          starts_with("AUC")) %>% ungroup() %>% 
   distinct() %>% 
   mutate(AUC_CV=abs(AUCDuplicate1-AUCDuplicate2)/mean(AUCDuplicate1+AUCDuplicate2)) %>% 
-  mutate(AUC_average=(AUCDuplicate1+AUCDuplicate2)/2)
+  mutate(AUC_average=(AUCDuplicate1+AUCDuplicate2)/2) %>% 
+  filter(AUC_CV<0.2) 
 
 
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# Putting aside the vaccine information to use later
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+OurVaccine.info<-Fig2.Save.Elisa %>% select(Rabbit=ID,Vaccine) %>% 
+  distinct() %>% 
+  mutate(Vaccine=recode(Vaccine,
+                        "gp120+STR8S-C"="gp120+STR8S-C (-Q11)",
+                        "gp120-Q11+STR8S-C"="gp120-Q11+STR8S-C (+Q11)"))
 
   
 
 ```
+
+
+
+## Figure 2 Bama
+
+```{r bamadata, echo=T}
+
+
+Val1<-list.files(file.path(pathtofile,"Figure2"))
+
+NewFiles<-str_subset(Val1,
+                     "breadth")
+
+
+
+File1<-read_excel(file.path(pathtofile,"Figure2/",
+                            NewFiles[1]),"FI - Bkgd")
+File2<-read_excel(file.path(pathtofile,"Figure2/",
+                            NewFiles[2]),"FI - Bkgd")  
+
+
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# Subset to the necessary info and derive proper names
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- 
+      # First File 1
+      # Grabbing the second set of data and calculating the CV
+      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+      
+      NewFile<-File1 %>%
+        slice((str_which(.[[1]],"Type")[2]-1):n())
+
+      colnames(NewFile)<-c(NewFile[2,1:3] %>% unlist(),
+                     NewFile[1,] %>% c() %>% unlist() %>%
+                       na.omit())
+      
+      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+      # This drops the first two rows (which are empty) 
+      # and then drops the bottom rows which have excess stuff 
+      # 
+      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+      
+      Fin.File.1<-NewFile %>% slice(-(1:2)) %>% 
+        filter(rowSums(!is.na(.))>1) %>% 
+        mutate_at(4:ncol(.),as.numeric)
+      
+      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+      # File 2 
+      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+      
+      NewFile<-File2 %>% slice((str_which(.[[1]],"Type")[2]-1):n())
+
+      colnames(NewFile)<-c(NewFile[2,1:3] %>% unlist(),
+                     NewFile[1,] %>% c() %>% unlist() %>% na.omit())
+      
+      Fin.File.2<-NewFile %>% slice(-(1:2)) %>% 
+        filter(rowSums(!is.na(.))>1) %>% 
+        mutate_at(4:ncol(.),as.numeric)
+      
+      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+      # Put together
+      #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+      
+      Fig2.Bama<-Fin.File.1 %>% mutate(What=NewFiles[1]) %>% 
+        bind_rows(Fin.File.2 %>% mutate(What=NewFiles[2]))
+      
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# Next QC and finding the CV and dropping samples 
+# that do not have a CV greater than 0.2 
+# dropping the blank column 
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---      
+      
+      
+      Fig2.save.Bama<-Fig2.Bama %>% 
+        filter(str_detect(Description,"wk")) %>% 
+        select(-starts_with("Blank")) %>% 
+        pivot_longer(cols = c(-Type,-Well,
+                              -Description,-What)) %>% 
+        group_by(Description,What,name) %>% 
+        summarize(MeanVal=mean(value),
+                  CV=abs(diff(value))/sum(value),
+                  .groups = "drop") %>% 
+        filter(CV<0.2) %>% 
+        select(-CV) %>% 
+        pivot_wider(values_from=MeanVal,names_from=name) %>% 
+        mutate(Week=parse_number(str_remove_all(str_split_fixed(Description,"N",2)[,1],
+                                                "wk")),
+               Rabbit=str_split_fixed(Description,
+                                        "[[:blank:]]",2)[,2]) %>% 
+        select(Description,Rabbit,Week,everything()) %>% 
+        arrange(Week) %>% 
+        left_join(OurVaccine.info) 
+
+```
+
 
 
 ## Figure 2 Infected cell binding
@@ -276,6 +294,8 @@ saveRDS(Fig2.all,
         file = file.path(pathtosave,"0_data_processed_fig2.RDS"))
 
 ```
+
+
 
 # Figure 3
 
