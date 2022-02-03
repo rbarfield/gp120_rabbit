@@ -1,0 +1,108 @@
+---
+title: "GP120-rabbit: Figure 5 analyses "
+author: 
+  - "Richard Barfield"
+  - "Biostatistics, Epidemiology and Research Design (BERD) Core"
+  - "Center for Human Systems Immunology (CHSI)"
+date: "`r  Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+```{r Baseinfo,eval=FALSE}
+#General info ----------------------
+#
+# Created: 2022-02-03
+#
+# Author: Richard Barfield
+#
+# Program: Code/14_Figure_5_analyses.R
+# 
+# Description: Analyses for Figure 5
+#--- --- --- --- --- --- --- --- --- --- --- --- --- 
+#--- --- --- --- --- --- --- --- --- --- --- --- --- 
+```
+
+```{r libs,message=FALSE, warning=FALSE, include=F, results='asis'}
+
+library(coin)
+library(DT)
+library(tidyverse)
+
+```
+
+# Introduction
+
+Reading in and processing the data into an analytical form to be used
+
+# Path to Data
+
+```{r loaddata}
+
+
+
+pathtofile<-"Data/Processed/"
+pathtofile<-file.path(getwd(),"../",pathtofile)
+
+
+
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# Load the data
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+Fig3.data<-readRDS(file.path(pathtofile,
+                             "0_data_processed_fig4_additional.RDS"))
+
+```
+
+# Figure 5D: GP120 specific 
+
+Not analyzing the total as the goal is assessing the gp120 specific. 
+
+```{r Aim3, echo=F}
+
+GP120specific <- Fig3.data$Figure4_gp120 %>% 
+  select(`Animal ID`,Vaccine, contains("IgG"))
+
+OurPvalues<-GP120specific %>% 
+  pivot_longer(cols=c(-`Animal ID`,-Vaccine)) %>% 
+  group_by(name) %>% 
+   summarize(pvalue=pvalue(wilcox_test(value~as.factor(Vaccine),
+            distribution="exact"))[1],
+            .groups="drop") %>% 
+  mutate(FDR_Pvalue=p.adjust(pvalue,"BH"))
+
+OurPvalues%>% 
+  DT::datatable(rownames=F) %>% 
+  DT::formatSignif(c("pvalue","FDR_Pvalue"),3)
+```
+
+## Visualization
+
+```{r visualize, echo=F,fig.height=8,fig.width=10}
+
+GP120specific %>% 
+  pivot_longer(cols=c(-`Animal ID`,-Vaccine)) %>% 
+  ggplot(aes(x=Vaccine,y=value,col=Vaccine))+
+  geom_boxplot(outlier.shape = NA)+
+  geom_point(position=position_jitter(0.01,seed=343))+
+  facet_wrap(~name,scales="free_y",nrow=2)+
+  theme(legend.position = "bottom")
+
+
+```
+
+# Session Info
+
+```{r sessioninfo}
+sessionInfo()
+```
