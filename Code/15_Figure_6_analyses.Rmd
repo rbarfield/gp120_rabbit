@@ -45,8 +45,7 @@ library(geesmv)
 
 library(ggfortify)
 library(rcompanion)
-library(ComplexHeatmap)
-library(RColorBrewer)
+
 library(nparLD)
 library(table1)
 library(readxl)
@@ -167,6 +166,103 @@ NewAnalysis %>% select(name,AdjWk0Pvalue=Pvalue,FDR.adjust) %>%
 
 ```
 
+
+# Spearman correlation values
+
+
+```{r somecor, options}
+
+SomeCor<-Fig3.data$Figure5_heatmap %>% 
+  mutate(name=str_remove_all(name," IgG%")) %>% 
+  mutate(name=ifelse(name=="Bissected","Bisected",name)) %>% 
+  mutate(name=ifelse(name=="agalactosylated","Agalatosylated",name)) %>% 
+  filter(name!="Neutralization_CH505w4.3")
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# Like everything this will take some coding 
+# 
+# First the gp120 wk14 values
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
+D1<-SomeCor %>% filter(name %in% c("ADCC_gp120 T/F_wk21",
+                                    "G1FS1(2,6)", 
+                                    "A1F(2,6)",
+                                    "A2FB(2,6)", 
+                                    "G1F[6]", 
+                                    "G1FB[6]/G1F[3]",
+                                    "Mono-galactosylated",
+                                    "Fucosylated",
+                                    "A1F(2,6)",
+                                    "G1F[3]/G1FB[6]",
+                                    "G1FS1(2,6)",
+                                    "G1[3]",
+                                    "G0F",
+                                    "G2",
+                                    "A1FB(2,6)",
+                                    "G1F[6]",
+                                    "G2F")) %>% 
+  select(`Animal ID`,What,name,value) %>% 
+  arrange(name)
+
+D2<-D1 %>% filter(str_detect(name,"ADCC",negate=T)) %>% 
+  left_join(D1 %>% filter(str_detect(name,"ADCC",negate=F)) %>% 
+              select(-name) %>% 
+              rename(ADCC=value))
+  
+
+
+
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# Calculate the correlation
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
+set.seed(41419)
+my.func<-function(ww,nn){
+  tt<-D2 %>% filter(What==ww & name==nn)
+  return(spearmanRho(~value+ADCC,ci=T,data=tt,type="perc",R=1000))
+}
+
+
+GG<-D2 %>% select(What,name) %>% 
+  distinct() %>% group_by(What,name) %>% 
+  summarize(ss=my.func(ww=What,nn=name),.groups="drop") %>% 
+  unpack(ss)
+
+
+
+ KeepHere<-GG %>%
+      mutate(fakelabel=paste0(name,"_",What)) %>% 
+      mutate(newfakelabel=fct_rev(fakelabel)) %>% 
+      arrange(fakelabel)
+    
+    KeepHere %>% 
+        ggplot(aes(x=(newfakelabel),
+                             y=`rho`,
+                             ymin=lower.ci,ymax=upper.ci,
+                             col=What))  +
+        geom_pointrange() + 
+        coord_flip() +  
+        xlab("Metabolite") + ylab("rho (95% Bootstrap CI)") +
+        theme_bw()  +
+        scale_x_discrete(breaks=KeepHere$fakelabel[seq(1,nrow(KeepHere),
+                                                 by=3)],
+                         labels=KeepHere$name[seq(1,nrow(KeepHere),
+                                                 by=3)])+
+      ggtitle("Correlation with ADCC to gp120 at week 21")
+    
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# Calculating the additional correlation 
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---    
+    
+GG %>% mutate(Estimate_and_CI=paste0(formatC(rho,3)," (",
+                                 formatC(lower.ci,3),", ",
+                                 formatC(upper.ci,3),")"))  %>% 
+  filter(What=="gp120-specific wk14") %>% select(What,name,Estimate_and_CI) %>% 
+  arrange(name) %>% 
+  kable(caption="Correlation Just IgG week14") %>% 
+  kable_styling(full_width = F)
+```
 
 # Session Info
 
