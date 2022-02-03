@@ -52,20 +52,23 @@ Reading in and processing the data into an analytical form to be used
 
 ```{r loaddata}
 
-
 pathtofile<-"Data/Original"
-
+pathtofile<-file.path(getwd(),"../",pathtofile)
 
 pathtosave<-"Data/Processed/"
-setwd(getwd())
+pathtosave<-file.path(getwd(),"../",pathtosave)
+
 
 ```
+
+
 
 # Figure 2
 
 ## Figure 2 Bama
 
 ```{r bamadata, echo=T}
+
 
 Val1<-list.files(file.path(pathtofile,"Figure2"))
 NewFiles<-str_subset(Val1,
