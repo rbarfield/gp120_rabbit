@@ -70,28 +70,6 @@ pathtofile<-file.path(getwd(),"../",pathtofile)
 
 
 
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# ADding information on what "vaccine group" in
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-OurVaccine.info<-read.delim(text = "Rabbit	Vaccine
-N32330	gp120+STR8S-C (-Q11)
-N32331	gp120+STR8S-C (-Q11)
-N32332	gp120+STR8S-C (-Q11)
-N32333	gp120+STR8S-C (-Q11)
-N32334	gp120+STR8S-C (-Q11)
-N32335	gp120+STR8S-C (-Q11)
-N32336	gp120+STR8S-C (-Q11)
-N32337	gp120+STR8S-C (-Q11)
-N32338	gp120-Q11+STR8S-C (+Q11)
-N32339	gp120-Q11+STR8S-C (+Q11)
-N32340	gp120-Q11+STR8S-C (+Q11)
-N32341	gp120-Q11+STR8S-C (+Q11)
-N32342	gp120-Q11+STR8S-C (+Q11)
-N32343	gp120-Q11+STR8S-C (+Q11)
-N32344	gp120-Q11+STR8S-C (+Q11)
-N32345	gp120-Q11+STR8S-C (+Q11)",sep="\t")
-
-
 ```
 
 # Figure S6A
@@ -152,9 +130,7 @@ Opvalue %>%
 
 
 
-Other.data<-FigS.data$FigS6B_FcR %>% 
-  mutate(`Rabbit`=paste0("N",`Animal ID`)) %>% 
-  left_join(OurVaccine.info)
+Other.data<-FigS.data$FigS6B_FcR 
 
 
 OurPvalues<-Other.data %>% 
@@ -238,13 +214,12 @@ HoldThis<-readRDS(file.path(pathtofile,
                              "0_data_processed_fig2.RDS"))
 Fig3.Bama <- HoldThis$Figure2_BAMA
 
-Fig3.Bama.Analyze<-Fig3.Bama %>% select(Rabbit,Week,
+Fig3.Bama.Analyze<-Fig3.Bama %>% select(Rabbit,Week,Vaccine,
                      c1086V1V2=`c1086 V1/V2 tag (20)`,
                      V3C=`Bio-V3.C (45)`,
                      C1=`C1-biotin (51)`,
                      V21086=`Bio-V2.1086.c (42)`,
                      C5.2C=`Bio. Rv144.C5.2C (43)`) %>% 
-  left_join(OurVaccine.info) %>% 
   pivot_longer(cols=c(-Rabbit,-Week,-Vaccine)) 
 
 
