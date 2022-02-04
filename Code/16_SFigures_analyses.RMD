@@ -35,8 +35,7 @@ knitr::opts_chunk$set(warning = FALSE)
 
 ```{r libs,message=FALSE, warning=FALSE, include=F, results='asis'}
 
-library(lubridate)
-library(DescTools)
+
 library(coin)
 
 library(geepack)
@@ -45,12 +44,10 @@ library(geesmv)
 
 library(ggfortify)
 library(rcompanion)
-library(ComplexHeatmap)
-library(RColorBrewer)
+
 library(nparLD)
 
-library(readxl)
-library(tidyxl)
+library(DT)
 library(knitr)
 library(kableExtra)
 library(tidyverse)
@@ -73,28 +70,6 @@ pathtofile<-file.path(getwd(),"../",pathtofile)
 
 
 
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# ADding information on what "vaccine group" in
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-OurVaccine.info<-read.delim(text = "Rabbit	Vaccine
-N32330	gp120+STR8S-C (-Q11)
-N32331	gp120+STR8S-C (-Q11)
-N32332	gp120+STR8S-C (-Q11)
-N32333	gp120+STR8S-C (-Q11)
-N32334	gp120+STR8S-C (-Q11)
-N32335	gp120+STR8S-C (-Q11)
-N32336	gp120+STR8S-C (-Q11)
-N32337	gp120+STR8S-C (-Q11)
-N32338	gp120-Q11+STR8S-C (+Q11)
-N32339	gp120-Q11+STR8S-C (+Q11)
-N32340	gp120-Q11+STR8S-C (+Q11)
-N32341	gp120-Q11+STR8S-C (+Q11)
-N32342	gp120-Q11+STR8S-C (+Q11)
-N32343	gp120-Q11+STR8S-C (+Q11)
-N32344	gp120-Q11+STR8S-C (+Q11)
-N32345	gp120-Q11+STR8S-C (+Q11)",sep="\t")
-
-
 ```
 
 # Figure S6A
@@ -108,8 +83,8 @@ First visualization (only 16, there is a duplcate metabolite in plot in SAP).
 # Load the data
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-Fig3.data<-readRDS(file.path(pathtofile,
-                             "0_data_processed_fig4.RDS"))
+FigS.data<-readRDS(file.path(pathtofile,
+                             "0_data_processed_sup_Figures.RDS"))
 
 
 
@@ -117,60 +92,13 @@ Fig3.data<-readRDS(file.path(pathtofile,
 
 ```
 
-There is data that is above the CV cutoff of 0.2 that is dropped and then this info was then rerun. 
-
-```{r cvanalysis, options}
 
 
-Fig3.binding<-Fig3.data$Figure4_binding
-
-ToDrop<-sum(Fig3.binding$CV >0.20)
-
-Fig3.binding %>% filter(CV>=0.2) %>% 
-  kable() %>% kable_styling(full_width = F)
-
-
-
-```
 
 
 ## Run the analysis
 
 ```{r analysisFigS6A, options}
-
-
-Fig3.binding.analysis<-Fig3.binding %>% 
-  filter(CV<0.2) %>% 
-  mutate(Description=str_remove_all(Description,"R")) %>% 
-  mutate(Rabbit=str_split_fixed(Description,"_",2)[,1],
-         Week=str_split_fixed(Description,"_",2)[,2]) %>% 
-  mutate(TheBinding=str_split_fixed(What,"wk",2)[,2]) %>% 
-  mutate(TheBinding=str_split_fixed(TheBinding,"14_",
-                                    2)[,2]) %>% 
-  mutate(TheBinding=str_remove_all(TheBinding,".xlsx")) %>% 
-  mutate(TheBinding=str_remove_all(TheBinding,
-                                   "(PL[[:alnum:]])")) %>% 
-  mutate(TheBinding=str_remove_all(TheBinding,"_"))
-
-Fig3.binding.analysis<-Fig3.binding.analysis %>% 
-  mutate(TheBinding=ifelse(str_detect(TheBinding,"FcR"),
-                           TheBinding,
-                           paste0("FcR",TheBinding))) %>% 
-  mutate(TheBinding=str_remove_all(TheBinding,
-                                   "[[:blank:]]"))
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# If there is more than one (due to sample sample as opposed to the population sample for CV)
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-Fig3_fin_binding<-Fig3.binding.analysis %>% 
-  mutate(DateRun=str_split_fixed(What,"_",2)[,1]) %>% 
-  group_by(TheBinding,Week,Rabbit) %>% 
-  arrange(desc(ymd(DateRun))) %>% 
-  slice(1) %>% ungroup() %>% 
-  select(Rabbit,Week,Value=Mean_val,TheBinding) %>% 
-  left_join(OurVaccine.info)
-
-
 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 # Run the p-value
@@ -178,7 +106,7 @@ Fig3_fin_binding<-Fig3.binding.analysis %>%
 
 
 
-Opvalue<-Fig3_fin_binding %>% 
+Opvalue<-FigS.data$FigS6A %>% 
    group_by(TheBinding,Week) %>% 
    summarize(pvalue_coin_exact=pvalue(wilcox_test(Value~as.factor(Vaccine),
             distribution="exact"))[1],
@@ -202,13 +130,7 @@ Opvalue %>%
 
 
 
-Fig3.data<-readRDS(file.path(pathtofile,
-                             "0_data_processed_fig4_additional.RDS"))
-
-
-Other.data<-Fig3.data$Figure4_FCR %>% 
-  mutate(`Rabbit`=paste0("N",`Animal ID`)) %>% 
-  left_join(OurVaccine.info)
+Other.data<-FigS.data$FigS6B_FcR 
 
 
 OurPvalues<-Other.data %>% 
@@ -230,20 +152,18 @@ OurPvalues%>%
 
 ```{r FigS8A, echo=F}
 
-Fig3.data<-readRDS(file.path(pathtofile,
-                             "0_data_processed_fig4.RDS"))
+# Fig3.data<-readRDS(file.path(pathtofile,
+#                              "0_data_processed_fig4.RDS"))
 
 
-Aim32<-Fig3.data$Figure4_spr
+Aim32<-FigS.data$FigS8A.actual_save.spr
 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 # Setting data to lower bound
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 ForAnalysis<-Aim32 %>% filter(name %in% c("kd","Avidity")) %>% 
-  mutate(Newvalue=ifelse(name=="kd" & AtLowerBound==1,Newvalue/2,Newvalue)) %>% 
-  rename("subject"=Sample) %>% 
-  left_join(OurVaccine.info %>% rename("subject"=Rabbit)) %>% 
-  mutate(Week=as.character(Week))
+  mutate(Week=as.character(Week)) %>% 
+  rename("subject"="Sample")
 
 Resu.KD<-nparLD(Newvalue~Week+Vaccine,time1.order = c("2","8","14"),
                           subject = "subject",order.warning = F,
@@ -271,9 +191,9 @@ data.frame(Pvalues=c(signif(Resu.KD$ANOVA.test.mod.Box[4],3),
 ForAnalysis %>% 
   mutate(AtBound=ifelse(AtUpperBound==1|AtLowerBound==1,"At Bound","Not At Bound")) %>% 
   mutate(Week=factor(Week,levels=c("2","8","14"))) %>% 
-  ggplot(aes(x=Week,y=Newvalue,col=Vaccine))+
+  ggplot(aes(x=Week,y=Newvalue+1,col=Vaccine))+
   geom_boxplot(outlier.shape = NA)+
-  geom_point(position = position_jitterdodge(0.1,seed=20210895))+
+  geom_point(position = position_jitterdodge(0.1,seed=20210895),size=2)+
   facet_wrap(~name,nrow=2,scales = "free_y")+
   scale_y_log10()
 
@@ -294,13 +214,12 @@ HoldThis<-readRDS(file.path(pathtofile,
                              "0_data_processed_fig2.RDS"))
 Fig3.Bama <- HoldThis$Figure2_BAMA
 
-Fig3.Bama.Analyze<-Fig3.Bama %>% select(Rabbit=RabbitID,Week,
+Fig3.Bama.Analyze<-Fig3.Bama %>% select(Rabbit,Week,Vaccine,
                      c1086V1V2=`c1086 V1/V2 tag (20)`,
                      V3C=`Bio-V3.C (45)`,
                      C1=`C1-biotin (51)`,
                      V21086=`Bio-V2.1086.c (42)`,
                      C5.2C=`Bio. Rv144.C5.2C (43)`) %>% 
-  left_join(OurVaccine.info) %>% 
   pivot_longer(cols=c(-Rabbit,-Week,-Vaccine)) 
 
 
@@ -334,6 +253,48 @@ ForGee<-Fig3.Bama.Analyze %>% ungroup() %>%
 
 
 
+my.formula<-BB~-1+name+Week*Vaccine
+
+
+NewGEE<-ForGee %>% mutate(Rabbit=str_sub(Rabbit,2,-1))
+NewGEE$subject<-NewGEE$Rabbit
+NewGEE$id<-NewGEE$Rabbit
+NewGEE<-NewGEE[order(NewGEE$subject),]
+
+NewResus<-MyGee.Var.MD(my.formula,id="id",family=stats::gaussian,
+                       data=NewGEE)
+
+Contrast.est2<-matrix(0,nrow=3,ncol=length(NewResus$beta_est))
+
+Contrast.est2[1:3,which(str_detect(names(NewResus$beta_est),"Vaccine") &
+                          str_detect(names(NewResus$beta_est),"Week",negate=T))]<-1
+
+Contrast.est2[2,which(str_detect(names(NewResus$beta_est),"Vaccine") &
+                          str_detect(names(NewResus$beta_est),"Week8"))]<-1
+Contrast.est2[3,which(str_detect(names(NewResus$beta_est),"Vaccine") &
+                          str_detect(names(NewResus$beta_est),"Week14"))]<-1
+
+
+Our.Var<-Contrast.est2 %*% NewResus$cov.beta  %*% t(Contrast.est2)
+
+Our.New.effects<-Contrast.est2 %*%NewResus$beta_est
+
+
+
+Overall.test<-t(Our.New.effects) %*% solve(Our.Var) %*% Our.New.effects
+Overall.Pvalue<-pchisq(Overall.test[1,1],df=3,lower.tail=F)
+
+Ind.Pvalues<-pchisq(Our.New.effects^2/diag(Our.Var),df=1,lower.tail=F)
+
+
+data.frame(What=c("Week 2 Vaccine: Q11 vs no","Week 8 Vaccine: Q11 vs no",
+                  "Week 14 Vaccine: Q11 vs no"),stringsAsFactors = F) %>% 
+  mutate(Effect_Estimate=Our.New.effects,
+         Effect_Std=sqrt(diag(Our.Var)),
+         Effect_Pvalue=Ind.Pvalues,
+         Effect_Adjust_Pvalue=p.adjust(Ind.Pvalues,"bonferroni")) %>% 
+  DT::datatable(rownames = F) %>% 
+  DT::formatSignif(c("Effect_Estimate","Effect_Std","Effect_Pvalue","Effect_Adjust_Pvalue"))
 
 ```
 

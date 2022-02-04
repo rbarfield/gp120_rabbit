@@ -59,8 +59,8 @@ pathtofile<-file.path(getwd(),"../",pathtofile)
 # Load the data
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-Fig3.data<-readRDS(file.path(pathtofile,
-                             "0_data_processed_fig4_additional.RDS"))
+Fig5.data<-readRDS(file.path(pathtofile,
+                             "0_data_processed_fig5.RDS"))
 
 ```
 
@@ -70,7 +70,7 @@ Not analyzing the total as the goal is assessing the gp120 specific.
 
 ```{r Aim3, echo=F}
 
-GP120specific <- Fig3.data$Figure4_gp120 %>% 
+GP120specific <- Fig5.data$Figure5_gp120 %>% 
   select(`Animal ID`,Vaccine, contains("IgG"))
 
 OurPvalues<-GP120specific %>% 

@@ -72,29 +72,9 @@ pathtofile<-file.path(getwd(),"../",pathtofile)
 # Load the data
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-Fig5.data<-readRDS(file.path(pathtofile,
-                             "0_data_processed_fig5.RDS"))
+Fig4.data<-readRDS(file.path(pathtofile,
+                             "0_data_processed_fig4.RDS"))
 
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# ADding information on what "vaccine group" in
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-OurVaccine.info<-read.delim(text = "Rabbit	Vaccine
-N32330	gp120+STR8S-C (-Q11)
-N32331	gp120+STR8S-C (-Q11)
-N32332	gp120+STR8S-C (-Q11)
-N32333	gp120+STR8S-C (-Q11)
-N32334	gp120+STR8S-C (-Q11)
-N32335	gp120+STR8S-C (-Q11)
-N32336	gp120+STR8S-C (-Q11)
-N32337	gp120+STR8S-C (-Q11)
-N32338	gp120-Q11+STR8S-C (+Q11)
-N32339	gp120-Q11+STR8S-C (+Q11)
-N32340	gp120-Q11+STR8S-C (+Q11)
-N32341	gp120-Q11+STR8S-C (+Q11)
-N32342	gp120-Q11+STR8S-C (+Q11)
-N32343	gp120-Q11+STR8S-C (+Q11)
-N32344	gp120-Q11+STR8S-C (+Q11)
-N32345	gp120-Q11+STR8S-C (+Q11)",sep="\t")
 
 
 ```
@@ -103,10 +83,9 @@ N32345	gp120-Q11+STR8S-C (+Q11)",sep="\t")
 
 ```{r fig4c, options}
 
-Analysis<-Fig5.data$Figure5_glycan %>% 
+Analysis<-Fig4.data$Figure4_glycan %>% 
   mutate(Rabbit=str_split_fixed(ID,"_",2)[,1]) %>% 
-  filter(str_detect(name,"IgG",negate=F)) %>% 
-  left_join(OurVaccine.info )
+  filter(str_detect(name,"IgG",negate=F)) 
 
 
 Analysis %>% ggplot(aes(x=Vaccine,y=MeanValue))+
@@ -121,7 +100,7 @@ Analysis %>% ggplot(aes(x=Vaccine,y=MeanValue))+
 ## Running the analysis
 
 ```{r runanalyss, options}
-OtherBit<-Fig5.data$Figure5_total_wk0 %>% 
+OtherBit<-Fig4.data$Figure4_total_wk0 %>% 
   filter(str_detect(name,"IgG",negate=F)) %>% 
   mutate(Rabbit=str_split_fixed(ID,"_",2)[,1]) 
 
