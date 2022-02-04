@@ -833,7 +833,60 @@ Fig4.corr.analysis<-Fig4.corr.analysis %>%
 ```
 
 
+
+
 # Figure 5
+
+
+
+
+
+## Figure 5 Mouse Information
+
+
+```{r fig4_addi, options}
+
+
+TheFile <- file.path(
+  pathtofile,
+  "Figure4 additional/Figure5 gp120-Q11 mouse gp120-specific IgG_summary_updated.xlsx"
+)
+
+New.data<-read_excel(TheFile)
+
+
+other.file <- file.path(
+  pathtofile,
+  "Figure4 additional/Figure5_gp120-Q11_mouse total IgG glycan_summary_updated.xlsx"
+)
+
+
+
+New.data_2<-read_excel(other.file)
+
+
+```
+
+
+
+## Save it out
+
+```{r saveout, echo=F}
+
+
+
+Fig5.data<-list(Figure5_gp120=New.data,
+                      Figure5_total=New.data_2)
+
+
+saveRDS(Fig5.data,
+        file = file.path(pathtosave,
+                         "0_data_processed_fig5.RDS"))
+
+
+
+```
+
 
 
 ## Figure5 total IgG Fc wk0 
