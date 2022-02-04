@@ -31,6 +31,8 @@ knitr::opts_chunk$set(echo = TRUE)
 # 
 # Modified 2022-02-03: Updating to output corresponding items as originally the planned figures 
 #                      were in a slightly different order. 
+#                      
+# Modified 2022-02-04: Updating kd properly.                       
 #--- --- --- --- --- --- --- --- --- --- --- --- --- 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- 
 ```
@@ -442,22 +444,22 @@ Fig4.save.spr<-read_excel(file.path(pathtofile,
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
 Fig4.actual_save.spr<-Fig4.save.spr %>% 
+  mutate_at(c("Response","kd","Avidity"),~ifelse(.=="ND",NA,.)) %>% 
   pivot_longer(cols=c("kd","Avidity")) %>% 
-  mutate(AtLowerBound=ifelse(value=="ND" & name=="kd",1,0)) %>% 
-  mutate(AtUpperBound=ifelse(value=="ND" & name=="Avidity",
+  mutate(AtUpperBound=ifelse(is.na(value) & name=="kd",1,0)) %>% 
+  mutate(AtLowerBound=ifelse(is.na(value) & name=="Avidity",
                              1,0)) %>% 
-  mutate(Newvalue=ifelse(name=="kd" & value=="ND",0.1,
-                         value)) %>% 
-  mutate(Newvalue=ifelse(name=="Avidity" & value=="ND",
-                         Response/0.1,Newvalue)) %>% 
-  mutate(Newvalue=parse_number(Newvalue)) %>% 
-  select(Sample,Week,name,Newvalue,AtLowerBound,AtUpperBound) %>% 
+  mutate(Newvalue=parse_number(value)) %>% 
+  group_by(name) %>% 
+  mutate(Newvalue=ifelse(is.na(value) & name=="kd",max(Newvalue,na.rm=T)+1,Newvalue)) %>% 
+  mutate(Newvalue=ifelse(is.na(value) & name=="Avidity",0,Newvalue)) %>% 
+  select(Sample,Week,name,value,Newvalue,AtLowerBound,AtUpperBound) %>% 
+  left_join(OurVaccine.info %>% rename("Sample"=Rabbit)) %>% 
   bind_rows(Fig4.save.spr %>% 
               select(Sample,Week,Newvalue=Response) %>% 
               mutate(name="Response",
                      AtLowerBound=0,
                      AtUpperBound=0))
-
 
 
 
