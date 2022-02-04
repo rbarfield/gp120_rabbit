@@ -35,21 +35,14 @@ knitr::opts_chunk$set(warning = FALSE)
 
 ```{r libs,message=FALSE, warning=FALSE, include=F, results='asis'}
 
-library(lubridate)
-library(DescTools)
+
 library(coin)
 
-library(geepack)
-library(gee)
-library(geesmv)
 
 library(ggfortify)
 library(rcompanion)
 
-library(nparLD)
-library(table1)
-library(readxl)
-library(tidyxl)
+
 library(knitr)
 library(kableExtra)
 library(tidyverse)
@@ -75,29 +68,20 @@ pathtofile<-file.path(getwd(),"../",pathtofile)
 # Load the data
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-Fig3.data<-readRDS(file.path(pathtofile,
-                             "0_data_processed_fig5.RDS"))
+Fig6.data<-readRDS(file.path(pathtofile,
+                             "0_data_processed_fig4.RDS"))
+
+
 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# ADding information on what "vaccine group" in
+# Load in the figure 6 correlation data
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-OurVaccine.info<-read.delim(text = "Rabbit	Vaccine
-N32330	gp120+STR8S-C (-Q11)
-N32331	gp120+STR8S-C (-Q11)
-N32332	gp120+STR8S-C (-Q11)
-N32333	gp120+STR8S-C (-Q11)
-N32334	gp120+STR8S-C (-Q11)
-N32335	gp120+STR8S-C (-Q11)
-N32336	gp120+STR8S-C (-Q11)
-N32337	gp120+STR8S-C (-Q11)
-N32338	gp120-Q11+STR8S-C (+Q11)
-N32339	gp120-Q11+STR8S-C (+Q11)
-N32340	gp120-Q11+STR8S-C (+Q11)
-N32341	gp120-Q11+STR8S-C (+Q11)
-N32342	gp120-Q11+STR8S-C (+Q11)
-N32343	gp120-Q11+STR8S-C (+Q11)
-N32344	gp120-Q11+STR8S-C (+Q11)
-N32345	gp120-Q11+STR8S-C (+Q11)",sep="\t")
+
+Fig6.data.additional<-readRDS(file.path(pathtofile,
+                             "0_data_processed_fig6.RDS"))
+
+
+
 
 
 ```
@@ -115,17 +99,14 @@ First visualization (only 16, there is a duplcate metabolite in plot in SAP).
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
 
-wk0_total_IgG<-Fig3.data$Figure5_total_wk0 %>% 
-  filter(str_detect(name,"IgG",negate=T)) %>% 
-  left_join(OurVaccine.info %>% rename(ID=Rabbit)) %>% 
-  filter(What_Is=="Individual")
+wk0_total_IgG<-Fig6.data$Figure4_total_wk0 %>% 
+  filter(str_detect(name,"IgG",negate=T)) 
 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 # Get the week 14 glycal gp120
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-wk14_glycal_gp120<-Fig3.data$Figure5_glycan %>% 
-  filter(str_detect(name,"IgG",negate=T)) %>% 
-  left_join(OurVaccine.info %>% rename(ID=Rabbit))
+wk14_glycal_gp120<-Fig6.data$Figure4_glycan %>% 
+  filter(str_detect(name,"IgG",negate=T)) 
 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 # Set up basis of analyses
@@ -172,7 +153,11 @@ NewAnalysis %>% select(name,AdjWk0Pvalue=Pvalue,FDR.adjust) %>%
 
 ```{r somecor, options}
 
-SomeCor<-Fig3.data$Figure5_heatmap %>% 
+
+
+
+
+SomeCor<-Fig6.data.additional$Figure6heatmap %>% 
   mutate(name=str_remove_all(name," IgG%")) %>% 
   mutate(name=ifelse(name=="Bissected","Bisected",name)) %>% 
   mutate(name=ifelse(name=="agalactosylated","Agalatosylated",name)) %>% 

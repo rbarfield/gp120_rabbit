@@ -35,8 +35,7 @@ knitr::opts_chunk$set(warning = FALSE)
 
 ```{r libs,message=FALSE, warning=FALSE, include=F, results='asis'}
 
-library(lubridate)
-library(DescTools)
+
 library(coin)
 
 library(geepack)
@@ -45,12 +44,10 @@ library(geesmv)
 
 library(ggfortify)
 library(rcompanion)
-library(ComplexHeatmap)
-library(RColorBrewer)
+
 library(nparLD)
 
-library(readxl)
-library(tidyxl)
+library(DT)
 library(knitr)
 library(kableExtra)
 library(tidyverse)
@@ -108,8 +105,8 @@ First visualization (only 16, there is a duplcate metabolite in plot in SAP).
 # Load the data
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-Fig3.data<-readRDS(file.path(pathtofile,
-                             "0_data_processed_fig4.RDS"))
+FigS.data<-readRDS(file.path(pathtofile,
+                             "0_data_processed_sup_Figures.RDS"))
 
 
 
@@ -117,60 +114,13 @@ Fig3.data<-readRDS(file.path(pathtofile,
 
 ```
 
-There is data that is above the CV cutoff of 0.2 that is dropped and then these observations were rerun. 
-
-```{r cvanalysis, options}
 
 
-Fig3.binding<-Fig3.data$Figure4_binding
-
-ToDrop<-sum(Fig3.binding$CV >0.20)
-
-Fig3.binding %>% filter(CV>=0.2) %>% 
-  kable() %>% kable_styling(full_width = F)
-
-
-
-```
 
 
 ## Run the analysis
 
 ```{r analysisFigS6A, options}
-
-
-Fig3.binding.analysis<-Fig3.binding %>% 
-  filter(CV<0.2) %>% 
-  mutate(Description=str_remove_all(Description,"R")) %>% 
-  mutate(Rabbit=str_split_fixed(Description,"_",2)[,1],
-         Week=str_split_fixed(Description,"_",2)[,2]) %>% 
-  mutate(TheBinding=str_split_fixed(What,"wk",2)[,2]) %>% 
-  mutate(TheBinding=str_split_fixed(TheBinding,"14_",
-                                    2)[,2]) %>% 
-  mutate(TheBinding=str_remove_all(TheBinding,".xlsx")) %>% 
-  mutate(TheBinding=str_remove_all(TheBinding,
-                                   "(PL[[:alnum:]])")) %>% 
-  mutate(TheBinding=str_remove_all(TheBinding,"_"))
-
-Fig3.binding.analysis<-Fig3.binding.analysis %>% 
-  mutate(TheBinding=ifelse(str_detect(TheBinding,"FcR"),
-                           TheBinding,
-                           paste0("FcR",TheBinding))) %>% 
-  mutate(TheBinding=str_remove_all(TheBinding,
-                                   "[[:blank:]]"))
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# If there is more than one (due to sample sample as opposed to the population sample for CV)
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-Fig3_fin_binding<-Fig3.binding.analysis %>% 
-  mutate(DateRun=str_split_fixed(What,"_",2)[,1]) %>% 
-  group_by(TheBinding,Week,Rabbit) %>% 
-  arrange(desc(ymd(DateRun))) %>% 
-  slice(1) %>% ungroup() %>% 
-  select(Rabbit,Week,Value=Mean_val,TheBinding) %>% 
-  left_join(OurVaccine.info)
-
-
 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 # Run the p-value
@@ -178,7 +128,7 @@ Fig3_fin_binding<-Fig3.binding.analysis %>%
 
 
 
-Opvalue<-Fig3_fin_binding %>% 
+Opvalue<-FigS.data$FigS6A %>% 
    group_by(TheBinding,Week) %>% 
    summarize(pvalue_coin_exact=pvalue(wilcox_test(Value~as.factor(Vaccine),
             distribution="exact"))[1],
@@ -202,11 +152,7 @@ Opvalue %>%
 
 
 
-Fig3.data<-readRDS(file.path(pathtofile,
-                             "0_data_processed_fig4_additional.RDS"))
-
-
-Other.data<-Fig3.data$Figure4_FCR %>% 
+Other.data<-FigS.data$FigS6B_FcR %>% 
   mutate(`Rabbit`=paste0("N",`Animal ID`)) %>% 
   left_join(OurVaccine.info)
 
@@ -230,11 +176,11 @@ OurPvalues%>%
 
 ```{r FigS8A, echo=F}
 
-Fig3.data<-readRDS(file.path(pathtofile,
-                             "0_data_processed_fig4.RDS"))
+# Fig3.data<-readRDS(file.path(pathtofile,
+#                              "0_data_processed_fig4.RDS"))
 
 
-Aim32<-Fig3.data$Figure4_spr
+Aim32<-FigS.data$FigS8A.actual_save.spr
 
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 # Setting data to lower bound

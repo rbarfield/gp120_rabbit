@@ -43,6 +43,8 @@ library(lubridate)
 library(DescTools)
 library(table1)
 library(readxl)
+library(knitr)
+library(kableExtra)
 library(tidyxl)
 library(tidyverse)
 
@@ -617,45 +619,6 @@ saveRDS(Fig4.all,
 
 
 
-## Figure 4 SPR
-
-This is the "binding avidity to gp120"
-
-```{r fig4spr, echo=T}
-
-New.fig4<-str_subset(list.files(file.path(pathtofile,
-                                          "Figure4/")),"SPR")
-
-Fig4.save.spr<-read_excel(file.path(pathtofile,
-                                    "Figure4/",New.fig4))
-
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# Get into form that shows whether or not at a bound
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-Fig4.actual_save.spr<-Fig4.save.spr %>% 
-  mutate_at(c("Response","kd","Avidity"),~ifelse(.=="ND",NA,.)) %>% 
-  pivot_longer(cols=c("kd","Avidity")) %>% 
-  mutate(AtUpperBound=ifelse(is.na(value) & name=="kd",1,0)) %>% 
-  mutate(AtLowerBound=ifelse(is.na(value) & name=="Avidity",
-                             1,0)) %>% 
-  mutate(Newvalue=parse_number(value)) %>% 
-  group_by(name) %>% 
-  mutate(Newvalue=ifelse(is.na(value) & name=="kd",max(Newvalue,na.rm=T)+1,Newvalue)) %>% 
-  mutate(Newvalue=ifelse(is.na(value) & name=="Avidity",0,Newvalue)) %>% 
-  select(Sample,Week,name,value,Newvalue,AtLowerBound,AtUpperBound) %>% 
-  left_join(OurVaccine.info %>% rename("Sample"=Rabbit)) %>% 
-  bind_rows(Fig4.save.spr %>% 
-              select(Sample,Week,Newvalue=Response) %>% 
-              mutate(name="Response",
-                     AtLowerBound=0,
-                     AtUpperBound=0))
-
-
-
-
-```
-
 
 ## Figure 4 binding
 
@@ -889,89 +852,6 @@ saveRDS(Fig5.data,
 
 
 
-## Figure5 total IgG Fc wk0 
-
-```{r Fig5_total, echo=T}
-
-New.fig5<-str_subset(list.files(file.path(pathtofile,
-                                          "Figure5/")),
-                     "Figure5 total IgG Fc wk0")
-
-Our.sheets<-str_subset(excel_sheets(file.path(pathtofile,
-                                             "Figure5/",
-                                             New.fig5)),"\\+")
-
-
-Our.Data<-read_excel(file.path(pathtofile,"Figure5/",New.fig5),sheet=Our.sheets)
-
-
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# Get this data into a slightly better format
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-
-HoldThis<-Our.Data %>% fill(1) %>% 
-  rename_at(3,~"ID") %>% 
-  rename_at(1,~"What_Is")
-  
-
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# get the names for the average info. 
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-PutAside<-HoldThis %>% filter(!is.na(.[[2]])) %>% 
-  select(-2,-4) %>% 
-  mutate(ID=str_remove_all(ID,"wk0_whole_IgG_Fc_")) %>% 
-  mutate_at(vars(-c("What_Is","ID")),as.numeric)
-
-
-NewMean.and.CV<-PutAside %>% 
-  filter(str_detect(What_Is,"Average",negate=T)) %>% 
-  pivot_longer(cols=c(-ID,-What_Is)) %>% 
-  mutate(newID=str_split_fixed(ID,"_",2)[,1]) %>% 
-  filter(!is.na(value)) %>% 
-  group_by(newID,name) %>% 
-  summarize(MeanValue=mean(value),
-            CV=abs(diff(value))/sum(value),.groups="drop")
-
-
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# Next the other data of interest the weird conglomerate he has and append to above 
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-
-
-New.Data<-read_excel(file.path(pathtofile,"Figure5/",
-                               New.fig5),
-                     sheet=Our.sheets,
-                     skip =str_which(Our.Data[[1]],
-                                     "Average")-1 )%>% fill(1) %>% 
-  rename_at(3,~"ID") %>% 
-  rename_at(1,~"What_Is") %>% 
-  select(-2,-4) %>% 
-  select(which(colMeans(is.na(.))<1))
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# Drop this G1F[3]/G1FB[6] as that is a typo and meant to be
-# G1FB[6]/G1F[3]
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-New.Conglom<- New.Data %>% select(What_Is,ID,
-                                  any_of(setdiff(colnames(New.Data),
-                                                 unique(NewMean.and.CV$name)))) %>% 
-  pivot_longer(cols=c(-ID,-What_Is),names_to="name",values_to = "MeanValue") %>% 
-  mutate(What_Is="Conglomerate") %>% 
-  filter(str_detect(name,"IgG"))
-
-
-Fig5.IgC.wk0<-NewMean.and.CV %>%  rename(ID=newID) %>% 
-  mutate(What_Is="Individual") %>% 
-  bind_rows(New.Conglom) %>% mutate(Week=0)
-  
-
-```
-
-
-
 ## Figure5 total IgG Fc wk14 
 
 ```{r Fig5_total_wk14, echo=T}
@@ -1045,113 +925,25 @@ Fig5.IgC.wk14<-NewMean.and.CV %>%  rename(ID=newID) %>%
 
 ```
 
-## Figure 5 glycan gp120-specific wk14 
 
+# Figure 6 
 
-
-```{r Fig5_glycan_wk14, echo=T}
-
-New.fig5<-str_subset(list.files(file.path(pathtofile, 
-                                          "Figure5/")), 
-                     "Figure5 glycan gp120-specific wk14")
-
-Our.sheets<-str_subset(excel_sheets(file.path(pathtofile,
-                                             "Figure5/",New.fig5)),
-                      "Avg assay1_2")
-
-
-Our.Data<-read_excel(file.path(pathtofile,"Figure5/",
-                              New.fig5),
-                    sheet=Our.sheets)
-
-
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# Get this data into a slightly better format
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-
-HoldThis<-Our.Data %>% fill(1) %>% 
-  rename_at(3,~"ID") %>% 
-  rename_at(1,~"What_Is")
-  
-
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# get the names for the average info. 
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-PutAside<-HoldThis %>% filter(!is.na(.[[2]])) %>% 
-  select_if(~!(all(is.na(.)))) %>% 
-  select_if(~!(all(.=="%"))) %>% 
-  mutate(ID=str_remove_all(ID,"wk14_")) %>% 
-  mutate_at(vars(-c("What_Is","ID")),as.numeric) %>% 
-  select(-2)
-
-
-NewMean.and.CV<-PutAside %>% 
-  filter(str_detect(What_Is,"Average",negate=T)) %>% 
-  pivot_longer(cols=c(-ID,-What_Is)) %>% 
-  mutate(newID=str_split_fixed(ID,"_",2)[,1]) %>% 
-  filter(!is.na(value)) %>% 
-  group_by(newID,name) %>% 
-  summarize(MeanValue=mean(value),
-            N=n(),
-            CV=abs(diff(value))/sum(value),.groups="drop")
-
-
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-# Next the other data of interest the weird conglomerate he has 
-#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-
-
-New.Data<-read_excel(file.path(pathtofile,"Figure5/",
-                               New.fig5),
-                     sheet=Our.sheets,
-                     skip =str_which(Our.Data[[1]],
-                                     "Average")-2 )%>% 
-  fill(1) %>% 
-  rename_at(3,~"ID") %>% 
-  rename_at(1,~"What_Is") %>% 
-  select(-2,-4) %>% 
-  select(which(colMeans(is.na(.))<1)) %>%
-  filter(!is.na(ID)) %>% 
-  select_if(~!(all(.=="%"))) 
-  
-
-
-New.Conglom<- New.Data %>% select(What_Is,ID,
-                                  any_of(setdiff(colnames(New.Data),
-                                                 unique(NewMean.and.CV$name)))) %>% 
-  pivot_longer(cols=c(-ID,-What_Is),names_to="name",values_to = "MeanValue") %>% 
-  mutate(What_Is="Conglomerate")
-
-
-
-Fig5.IgC.glycan.wk14<-NewMean.and.CV %>% 
-  rename(ID=newID) %>% 
-  select(-N) %>% 
-  mutate(What_Is="Individual") %>% 
-  bind_rows(New.Conglom) %>% mutate(Week=14)
-
-```
-
-
-## Figure 5 glycan-function correlation
+## Figure 6 Correlation information 
 
 Again, seems to be an overly complicated analysis, with too many features 
 
 
 ```{r FinFig5, options}
 
-New.fig5<-str_subset(list.files(file.path(pathtofile,
+New.fig6<-str_subset(list.files(file.path(pathtofile,
                                           "Figure5/")),
                      "Figure5 glycan-function correlation")
 
-Our.sheets<-excel_sheets(file.path(pathtofile,"Figure5/",New.fig5))
+Our.sheets<-excel_sheets(file.path(pathtofile,"Figure5/",New.fig6))
 
 
 Our.Data<-lapply(Our.sheets,function(x){
-        read_excel(file.path(pathtofile,"Figure5/",New.fig5),
+        read_excel(file.path(pathtofile,"Figure5/",New.fig6),
                    sheet=x) %>% 
     mutate(What=x)
   }
@@ -1160,7 +952,7 @@ Our.Data<-lapply(Our.sheets,function(x){
 
 TheInfo.on.col.location<-tidyxl::xlsx_cells(file.path(pathtofile,
                                                       "Figure5/",
-                                                      New.fig5)) %>% 
+                                                      New.fig6)) %>% 
   filter(data_type=="character") %>% 
   filter(row==1) 
 
@@ -1168,7 +960,7 @@ Our.Info<-TheInfo.on.col.location %>%
   select(What=sheet,address,row,col,name=character)
 
 
-Fig5.corr.analysis<-Our.Data %>% bind_rows() %>% 
+Fig6.corr.analysis<-Our.Data %>% bind_rows() %>% 
   pivot_longer(cols=c(-`Animal ID`,-What)) %>% 
   left_join(Our.Info)
 
@@ -1176,36 +968,190 @@ Fig5.corr.analysis<-Our.Data %>% bind_rows() %>%
 
 ```
 
-## Figure 5 save it out
+## Figure 6 save it out
 
 
 
 
-```{r saveFig5, echo=T}
+```{r saveFig6, echo=T}
 
-Fig5.all<-list(Figure5_total_wk0=Fig5.IgC.wk0,
-               Figure5_total_wk14=Fig5.IgC.wk14,
-               Figure5_glycan=Fig5.IgC.glycan.wk14,
-               Figure5_heatmap=Fig5.corr.analysis)
+Fig6.all<-list(Figure6heatmap=Fig6.corr.analysis)
 
 
-saveRDS(Fig5.all,
-        file = file.path(pathtosave,"0_data_processed_fig5.RDS"))
+saveRDS(Fig6.all,
+        file = file.path(pathtosave,"0_data_processed_fig6.RDS"))
+
+```
+
+# Supplement Figure
+
+
+
+## Figure S6A
+
+```{r fig6Abinding, echo=T}
+
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# This one will be a pain.
+# Have to go through the different sheets. 
+# Grab the occasional ones where they were repeated and
+# what not. 
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
+New.figS6A<-str_subset(list.files(file.path(pathtofile,
+                                          "Figure4/")),
+                     "rabbit FcR binding")
+
+FigS6A.save.spr<-lapply(New.figS6A,
+                      function(x) read_excel(file.path(pathtofile, "Figure4/",
+                                                       x),
+                                             sheet="FI - Bkgd") %>% 
+                        mutate(What=x))
+
+Orig.info<-lapply(New.figS6A,function(x) read_excel(file.path(pathtofile,
+                                                                "Figure4/",x),
+                                                      sheet="FI") %>% 
+                        mutate(What=x))
+
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# Make a function to go through and clean some of these
+# Grabbing the second half where the duplicates are
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+    my.func<-function(x){
+      tt<-str_which(x[[1]],"Type")
+      newcolnames<-x %>% slice(tt[2]) %>% unlist() %>% unname
+      exist<-which(colnames(x)=="What")
+      newcolnames[exist]<-"What"
+      
+      
+      newcolnames2<-x %>% slice(tt[1]-1) %>% unlist() %>% unname
+      newcolnames2[which(newcolnames=="What")]<-""
+      newcolnames2[which(is.na(newcolnames2))]<-""
+      Finnames<-paste0(newcolnames," ",newcolnames2)
+      
+      
+      newx<-x %>% slice((tt[[2]]+1):n()) %>% 
+        rename_all(~str_squish(Finnames)) %>% 
+        mutate_at(vars(starts_with("FI")),as.numeric)
+      return(newx)
+      
+    }
+    
+
+  #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+  # Now run 
+  # Read in the data before the correction due to wanting
+  # to calculate the CV. 
+  #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---    
+
+    
+    All.Things<-lapply(FigS6A.save.spr,my.func) %>% bind_rows()
+    
+    
+    All.Things.2<-lapply(Orig.info,my.func) %>% bind_rows()
+    
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# Next we will go through and calculate the CV, puting the blank 
+# corrected that are negative at 0, also dropping the controls
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---    
+    
+    Actual_CV<-All.Things.2 %>% 
+      filter(str_detect(Description,"naive|BIVIG",negate=T)) %>% 
+      mutate_at(vars(starts_with("FI")),~ifelse(.<0,0,.)) %>% 
+      select(-contains("Blank")) %>% 
+      rename_at(vars(starts_with("FI")),~"FI") %>% 
+      group_by(Description,What) %>% 
+      summarize(CV=abs(diff(FI))/sum(FI),
+                N=n(),.groups="drop")
+  
+    Actual_CV %>% filter(abs(CV)>=0.2) %>%
+      knitr::kable() %>% 
+      kableExtra::kable_styling()
+    
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# Actual Data
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---  
+    FigS6A.data.for.saving<- All.Things %>% 
+      filter(str_detect(Description,"naive|BIVIG",negate=T)) %>% 
+      mutate_at(vars(starts_with("FI")),~ifelse(.<0,0,.)) %>% 
+      select(-contains("Blank")) %>% 
+      rename_at(vars(starts_with("FI")),~"FI") %>% 
+      group_by(Description,What) %>% 
+      summarize(Mean_val=mean(FI),
+                TheWell=paste(Well,collapse=","),
+                .groups="drop") %>% 
+      left_join(Actual_CV %>% select(-N))
+
+    
+    
+    
+```
+
+There is data that is above the CV cutoff of 0.2 that is dropped and then these observations were rerun. 
+
+```{r cvanalysis, options}
+
+
+
+ToDrop<-sum(FigS6A.data.for.saving$CV >0.20)
+
+FigS6A.data.for.saving %>% filter(CV>=0.2) %>% 
+  kable() %>% kable_styling(full_width = F)
+
+
 
 ```
 
 
+Processing additional data
 
-# Figure 4 Mouse Additional information
+```{r processing more, options}
+
+FigS6A.binding.analysis<-FigS6A.data.for.saving %>% 
+  filter(CV<0.2) %>% 
+  mutate(Description=str_remove_all(Description,"R")) %>% 
+  mutate(Rabbit=str_split_fixed(Description,"_",2)[,1],
+         Week=str_split_fixed(Description,"_",2)[,2]) %>% 
+  mutate(TheBinding=str_split_fixed(What,"wk",2)[,2]) %>% 
+  mutate(TheBinding=str_split_fixed(TheBinding,"14_",
+                                    2)[,2]) %>% 
+  mutate(TheBinding=str_remove_all(TheBinding,".xlsx")) %>% 
+  mutate(TheBinding=str_remove_all(TheBinding,
+                                   "(PL[[:alnum:]])")) %>% 
+  mutate(TheBinding=str_remove_all(TheBinding,"_"))
+
+FigS6A.binding.analysis<-FigS6A.binding.analysis %>% 
+  mutate(TheBinding=ifelse(str_detect(TheBinding,"FcR"),
+                           TheBinding,
+                           paste0("FcR",TheBinding))) %>% 
+  mutate(TheBinding=str_remove_all(TheBinding,
+                                   "[[:blank:]]"))
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# If there is more than one (due to sample sample as opposed to the population sample for CV)
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+FigS6A_fin_binding<-FigS6A.binding.analysis %>% 
+  mutate(DateRun=str_split_fixed(What,"_",2)[,1]) %>% 
+  group_by(TheBinding,Week,Rabbit) %>% 
+  arrange(desc(ymd(DateRun))) %>% 
+  slice(1) %>% ungroup() %>% 
+  select(Rabbit,Week,Value=Mean_val,TheBinding) %>% 
+  left_join(OurVaccine.info)
 
 
-## Figure 4 Mouse fCR   
+
+```
 
 
-```{r fig4_addi, options}
+## Figure S6B
+
+```{r figs6B, options}
+
 
 TheFile<-file.path(pathtofile,
-                                  "Figure4 additional/Figure4_FcgR_signaling_updated.xlsx")
+                   "Figure4 additional/Figure4_FcgR_signaling_updated.xlsx")
 
 Our.sheets<-excel_sheets(TheFile)
 
@@ -1214,38 +1160,56 @@ Our.data<-lapply(Our.sheets,function(x) read_excel(TheFile,sheet=x) %>%
                    mutate(What=x))
 
 
-Fig4_FcR<-Our.data %>% bind_rows() %>% 
+FigS6B_FcR<-Our.data %>% bind_rows() %>% 
   group_by(`Animal ID`,What,Duplicate) %>% 
   summarize(AUC1=AUC(x=log10(Dilution),y=OD),.groups="drop") %>% 
-  pivot_wider(values_from=AUC1,names_from=Duplicate)
+  pivot_wider(values_from=AUC1,names_from=Duplicate)%>% 
+  mutate(`Rabbit`=paste0("N",`Animal ID`)) %>% 
+  left_join(OurVaccine.info)
 
 
 
 ```
 
 
-## GP120 IgG specific 
+## Figure S8A
+
+```{r FigureS8A, options}
 
 
-```{r fig4_addit2, options}
-TheFile <- file.path(
-  pathtofile,
-  "Figure4 additional/Figure5 gp120-Q11 mouse gp120-specific IgG_summary_updated.xlsx"
-)
+New.figS8A<-str_subset(list.files(file.path(pathtofile,
+                                          "Figure4/")),"SPR")
 
-New.data<-read_excel(TheFile)
+FigS8A.save.spr<-read_excel(file.path(pathtofile,
+                                    "Figure4/",New.figS8A))
+
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+# Get into form that shows whether or not at a bound
+#--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+FigS8A.actual_save.spr<-FigS8A.save.spr %>% 
+  mutate_at(c("Response","kd","Avidity"),~ifelse(.=="ND",NA,.)) %>% 
+  pivot_longer(cols=c("kd","Avidity")) %>% 
+  mutate(AtUpperBound=ifelse(is.na(value) & name=="kd",1,0)) %>% 
+  mutate(AtLowerBound=ifelse(is.na(value) & name=="Avidity",
+                             1,0)) %>% 
+  mutate(Newvalue=parse_number(value)) %>% 
+  group_by(name) %>% 
+  mutate(Newvalue=ifelse(is.na(value) & name=="kd",max(Newvalue,na.rm=T)+1,Newvalue)) %>% 
+  mutate(Newvalue=ifelse(is.na(value) & name=="Avidity",0,Newvalue)) %>% 
+  select(Sample,Week,name,value,Newvalue,AtLowerBound,AtUpperBound) %>% 
+  left_join(OurVaccine.info %>% rename("Sample"=Rabbit)) %>% 
+  bind_rows(FigS8A.save.spr %>% 
+              select(Sample,Week,Newvalue=Response) %>% 
+              mutate(name="Response",
+                     AtLowerBound=0,
+                     AtUpperBound=0))
 
 
-other.file <- file.path(
-  pathtofile,
-  "Figure4 additional/Figure5_gp120-Q11_mouse total IgG glycan_summary_updated.xlsx"
-)
 
-
-
-New.data_2<-read_excel(other.file)
 
 ```
+
 
 
 ## Save it out
@@ -1254,14 +1218,14 @@ New.data_2<-read_excel(other.file)
 
 
 
-Fig4.additional<-list(Figure4_FCR=Fig4_FcR,
-                      Figure4_gp120=New.data,
-                      Figure4_total=New.data_2)
+FigS.additional<-list(FigS6A=FigS6A_fin_binding,
+                      FigS6B_FcR=FigS6B_FcR,
+                      FigS8A.actual_save.spr=FigS8A.actual_save.spr)
 
 
-saveRDS(Fig4.additional,
+saveRDS(FigS.additional,
         file = file.path(pathtosave,
-                         "0_data_processed_fig4_additional.RDS"))
+                         "0_data_processed_sup_Figures.RDS"))
 
 
 
