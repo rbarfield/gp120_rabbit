@@ -3,4 +3,6 @@
 .RData
 .Ruserdata
 .xlsx
+Data/Original/*
+Data/Processed/*
 *html
