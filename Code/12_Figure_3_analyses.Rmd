@@ -41,12 +41,13 @@ library(coin)
 library(ggfortify)
 library(factoextra)
 library(geepack)
+library(matrixcalc)
 library(gee)
 library(geesmv)
 library(ez)
 library(DT)
 library(nparLD)
-
+library(stats)
 library(knitr)
 library(kableExtra)
 library(tidyverse)
@@ -321,7 +322,8 @@ ForAnalysis<-Fig3.data$Figure3_ADCC %>%
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 # Put All Results together
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-          
+
+           
       data.frame(Pvalues_nparld=c(signif(Resu1.titer.gp120$ANOVA.test.mod.Box[4],3),
                              signif(Resu1.titer.HIV$ANOVA.test.mod.Box[4],3),
                              signif(Resu1.max.gp120$ANOVA.test.mod.Box[4],3),
@@ -330,9 +332,8 @@ ForAnalysis<-Fig3.data$Figure3_ADCC %>%
                               perm.resu.titer.HIV$p[1],
                               perm.resu.max.gp120$p[1],
                               perm.resu.max.HIV$p[1])) %>% 
-        mutate(FinPvalue=ifelse(Pvalues_perm==0,Pvalues_perm,Pvalues_nparld)) %>%
-        mutate(FDR_Pvalue=p.adjust(FinPvalue,"BH")) %>% 
-        dplyr::select(-FinPvalue) %>% 
+        
+        mutate(FDR_Pvalue=p.adjust(Pvalues_perm,"BH")) %>% 
         mutate(Pvalues_perm=ifelse(Pvalues_perm==0,"<0.001",Pvalues_perm)) %>% 
         mutate(FDR_Pvalue=signif(FDR_Pvalue,3)) %>% 
         mutate(FDR_Pvalue=ifelse(FDR_Pvalue==0,"<0.001",FDR_Pvalue)) %>% 
@@ -340,11 +341,11 @@ ForAnalysis<-Fig3.data$Figure3_ADCC %>%
                Variable=c("Titer","Titer","Max Activity","Max Activity")) %>% 
         dplyr::select(What,Variable,everything()) %>% 
         kable() %>% kable_styling(full_width = F)
-        
+      
           
 ```
 
-Everything is significant. The permutation was done as the Titer analysis produced singular covariance matrix.
+Everything is significant. The permutation was done as the Titer analysis produced singular covariance matrix. We will use the permutation p-values (nparLD)
  
 Doing individual tests. Here we used Bonferroni adjustment.
 

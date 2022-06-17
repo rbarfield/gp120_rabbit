@@ -73,7 +73,7 @@ pathtofile<-file.path(getwd(),"../",pathtofile)
     Mouse.Data<-read_excel(file.path(pathtofile,File2))
 ```
 
-# Rabbit Data Supplementary Analysis
+# Rabbit Data Supplementary Analysis (Fig. S4)
 
 
 
@@ -146,7 +146,7 @@ Suggests a statistically significant difference between the wk14 anti-Q11 and th
 
 
 
-# Mouse Data questions
+# Mouse Data questions (Fig S12)
 
 
 ```{r mousetest1, fig.width=10}
