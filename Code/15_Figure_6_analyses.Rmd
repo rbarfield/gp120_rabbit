@@ -42,7 +42,7 @@ library(coin)
 library(ggfortify)
 library(rcompanion)
 
-
+library(DT)
 library(knitr)
 library(kableExtra)
 library(tidyverse)
@@ -86,7 +86,7 @@ Fig6.data.additional<-readRDS(file.path(pathtofile,
 
 ```
 
-# Figure 6B
+# Figure 6B (also Fig S15)
 
 First visualization (only 16, there is a duplcate metabolite in plot in SAP).
 

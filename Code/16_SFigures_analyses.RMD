@@ -44,9 +44,9 @@ library(geesmv)
 
 library(ggfortify)
 library(rcompanion)
-
+library(matrixcalc)
 library(nparLD)
-
+library(stats)
 library(DT)
 library(knitr)
 library(kableExtra)
@@ -72,7 +72,7 @@ pathtofile<-file.path(getwd(),"../",pathtofile)
 
 ```
 
-# Figure S6A
+# Figure S13B
 
 First visualization (only 16, there is a duplcate metabolite in plot in SAP).
 
@@ -123,7 +123,7 @@ Opvalue %>%
 
 ```
 
-# Figure S6B
+# Figure S13C
 
 
 ```{r FigS6B, options}
@@ -146,9 +146,12 @@ OurPvalues%>%
 ```
 
 
+# Figure S15
+
+See Figure 6 analysis. 
 
 
-# Figure S8A
+# Figure S16A
 
 ```{r FigS8A, echo=F}
 
@@ -200,7 +203,7 @@ ForAnalysis %>%
 ```
 
 
-# Figure S8B
+# Figure S16B
 
 ```{r FigureS8B, }
 #--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---

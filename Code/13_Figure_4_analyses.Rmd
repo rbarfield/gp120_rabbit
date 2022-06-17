@@ -42,7 +42,7 @@ library(coin)
 library(geepack)
 library(gee)
 library(geesmv)
-
+library(DT)
 library(ComplexHeatmap)
 library(RColorBrewer)
 library(nparLD)
