@@ -1,1 +1,1 @@
-Datasets and code for GP120 rabbit analyses.
+Datasets for GP120 rabbit analyses.
